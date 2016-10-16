@@ -1,6 +1,7 @@
 package malspider
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -13,7 +14,10 @@ import (
 )
 
 const (
-	MAL_ANIME_URL = "https://myanimelist.net/anime/"
+	MALMainUrl            = "http://myanimelist.net"
+	MalAnimeUrl           = MALMainUrl + "/anime/"
+	MALCharactersUrl      = MALMainUrl + "/anime/%v/rand/characters"
+	MALCharacterDetailUrl = MALMainUrl + "/character/%v/rand/pictures"
 )
 
 func StartSpider(start, end int, manga bool, workers int) {
@@ -44,29 +48,74 @@ func startFillWorker(queue chan int, start, end int) {
 	close(queue)
 }
 
+func getUrlData(url string) ([]byte, error) {
+	var body []byte
+	fmt.Printf("download %v\n", url)
+	dat, err := http.Get(url)
+	if err != nil || dat.StatusCode != http.StatusOK {
+		return body, errors.New(fmt.Sprintf("error: load url %v, error %v, status %v\n", url, err, dat.StatusCode))
+	}
+	body, err = ioutil.ReadAll(dat.Body)
+	dat.Body.Close()
+	if err != nil {
+		return body, errors.New(fmt.Sprintf("error: read body %v, error %v\n", url, err))
+	}
+	return body, nil
+}
+
 func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malparser.Anime, manga bool) {
 	defer wg.Done()
 
+	parsedCharacters := map[int]bool{}
+
 	for i := range queue {
-		url := MAL_ANIME_URL + strconv.Itoa(i)
-		fmt.Printf("download %v\n", url)
-		dat, err := http.Get(url)
-		if err != nil || dat.StatusCode != http.StatusOK {
-			fmt.Printf("can't load url %v, error %v, status %v\n", url, err, dat.StatusCode)
-			continue
-		}
-		body, err := ioutil.ReadAll(dat.Body)
-		dat.Body.Close()
+		url := MalAnimeUrl + strconv.Itoa(i)
+
+		body, err := getUrlData(url)
 		if err != nil {
-			fmt.Printf("can't read body %v, error %v\n", url, err)
+			fmt.Println(err.Error())
 			continue
 		}
 		anime, err := malparser.ParseAnimePage(body)
+		anime.Id = i
 		if err != nil {
-			fmt.Printf("can't parse url %v, error %v\n", url, err)
+			fmt.Printf("error: parse url %v, error %v\n", url, err)
 			continue
 		}
-		anime.Id = i
+
+		url = fmt.Sprintf(MALCharactersUrl, i)
+		body, err = getUrlData(url)
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		}
+		characters, err := malparser.ParseAnimeCharacters(body)
+		if err != nil {
+			fmt.Printf("error: parse url %v, error %v\n", url, err)
+			continue
+		}
+		anime.Characters = characters
+
+		for charIndex := range anime.Characters {
+			//Update characters only one time
+			if _, ok := parsedCharacters[anime.Characters[charIndex].Id]; !ok {
+				url = fmt.Sprintf(MALCharacterDetailUrl, anime.Characters[charIndex].Id)
+				body, err = getUrlData(url)
+				if err != nil {
+					fmt.Printf(err.Error())
+					continue
+				}
+				favorites, images, err := malparser.ParseCharacterPage(body)
+				if err != nil {
+					fmt.Printf("error: parse character %v", anime.Characters[charIndex].Id)
+					continue
+				}
+				anime.Characters[charIndex].Favorites = favorites
+				anime.Characters[charIndex].Images = images
+				parsedCharacters[anime.Characters[charIndex].Id] = true
+			}
+
+		}
 		result <- anime
 	}
 }
@@ -76,23 +125,26 @@ func startSaver(wg *sync.WaitGroup, result chan malparser.Anime, manga bool) {
 
 	db, err := gorm.Open("postgres", "host=127.0.0.1 port=5432 user=user dbname=user sslmode=disable password=user")
 	if err != nil {
-		fmt.Printf("can't connect to db %v\n", err)
+		fmt.Printf("error: connect to db %v\n", err)
 		return
 	}
 	defer db.Close()
 	db.AutoMigrate(&malmodel.AnimeModel{})
+	db.AutoMigrate(&malmodel.CharacterModel{})
 
 	for anime := range result {
-		fmt.Printf("save data to db %v", anime.Id)
+		fmt.Printf("save data to db: animeId %v\n", anime.Id)
 
 		animeModel := malmodel.GetAnimeModelFromParsedAnime(anime)
 
-		var count int
-		db.First(&malmodel.AnimeModel{}, anime.Id).Count(&count)
-		if count > 0 {
-			db.Save(animeModel)
-		} else {
-			db.Create(animeModel)
+		err := animeModel.SaveModel(db)
+		if err != nil {
+			fmt.Printf("error: save data %v\n", err)
 		}
+		err = malmodel.SaveCharacters(anime.Characters, db)
+		if err != nil {
+			fmt.Printf("error: save char data %v\n", err)
+		}
+
 	}
 }
