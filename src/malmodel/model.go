@@ -7,9 +7,9 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"malparser"
-	"strconv"
 )
 
+type StoredCharSlice []StoredChar
 type StoredChar struct {
 	Id   int
 	Main bool
@@ -21,7 +21,7 @@ type AnimeModel struct {
 	ScoreCount  int     `gorm:"index"`
 	Title       string
 	English     string
-	Group       int    `gorm:"index"`
+	GroupId     int    `gorm:"index"`
 	RelatedJSON string `sql:"type:jsonb"`
 	CharsJSON   string `sql:"type:jsonb"`
 }
@@ -39,25 +39,40 @@ func (c CharacterModel) GetImages() []string {
 	return images
 }
 
-func (a AnimeModel) GetStoredChars() []StoredChar {
-	chars := make([]StoredChar, 0)
+func (a AnimeModel) GetStoredChars() StoredCharSlice {
+	chars := make(StoredCharSlice, 0)
 	json.Unmarshal([]byte(a.CharsJSON), &chars)
 	return chars
 }
 
-func (a AnimeModel) GetRelatedCharacters(db *gorm.DB) ([]CharacterModel, error) {
+func (chars StoredCharSlice) GetIds() []int {
+	var titleCharacters []int
+	for _, char := range chars {
+		titleCharacters = append(titleCharacters, char.Id)
+	}
+	return titleCharacters
+}
+
+func (chars StoredCharSlice) GetMainCharsMap() map[int]bool {
+	res := map[int]bool{}
+	for _, char := range chars {
+		if char.Main {
+			res[char.Id] = true
+		}
+	}
+	return res
+}
+
+func (a AnimeModel) GetRelatedCharacters(db *gorm.DB) ([]CharacterModel, map[int]bool, error) {
 	storedChars := a.GetStoredChars()
-	titleCharactersIds := make([]string, len(storedChars))
-	for i, char := range storedChars {
-		titleCharactersIds[i] = strconv.Itoa(char.Id)
-	}
+	mainMap := storedChars.GetMainCharsMap()
 	var characters []CharacterModel
-	query := db.Where("id in (?)", titleCharactersIds).Find(&characters)
-	errs := query.GetErrors()
-	if len(errs) > 0 {
-		return characters, errors.New(fmt.Sprint(errs))
+	fmt.Println(storedChars, storedChars.GetIds())
+	query := db.Where("id in (?)", storedChars.GetIds()).Find(&characters)
+	if errs := query.GetErrors(); len(errs) > 0 {
+		return characters, mainMap, errors.New(fmt.Sprint(errs))
 	}
-	return characters, nil
+	return characters, mainMap, nil
 }
 
 func (m *AnimeModel) SaveModel(db *gorm.DB) error {
@@ -80,7 +95,7 @@ func (m *AnimeModel) SaveModel(db *gorm.DB) error {
 func GetAnimeModelFromParsedAnime(anime malparser.Anime) *AnimeModel {
 	relatedJson, _ := json.Marshal(anime.Related)
 
-	animeChars := make([]StoredChar, len(anime.Characters))
+	animeChars := make([]StoredChar, 0)
 	for _, char := range anime.Characters {
 		animeChars = append(animeChars, StoredChar{Id: char.Id, Main: char.Main})
 	}

@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	malspider.StartSpider(1, 1000, false, 1)
+	malspider.StartSpider(1, 100, false, 1)
 }
