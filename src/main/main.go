@@ -1,9 +1,9 @@
 package main
 
 import (
-	"mal/spider"
+	"malspider"
 )
 
 func main() {
-	malspider.StartSpider(1, 5, false, 1)
+	malspider.StartSpider(1, 1000, false, 1)
 }

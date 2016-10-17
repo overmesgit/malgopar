@@ -93,8 +93,19 @@ func ParseAnimePage(pageHTML []byte) (Anime, error) {
 	res.Score = GetScore(doc, parserError)
 	res.ScoreCount = GetScoreCount(doc, parserError)
 	res.Related = GetRelated(doc, parserError)
+	res.Title = GetTitle(doc, parserError)
+	res.English = GetEnglish(doc, parserError)
 
 	return res, parserError.GetError()
+}
+
+func GetTitle(doc *goquery.Document, parserError *ParserError) string {
+	return doc.Find("h1 span").Text()
+}
+
+func GetEnglish(doc *goquery.Document, parserError *ParserError) string {
+	rowText := doc.Find(`span:contains("English:")`).Parent().Text()
+	return strings.Trim(strings.Replace(rowText, "English:", "", -1), " \n")
 }
 
 func GetScore(doc *goquery.Document, parserError *ParserError) float64 {

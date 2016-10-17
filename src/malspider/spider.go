@@ -6,8 +6,8 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"io/ioutil"
-	"mal/model"
-	"mal/parser"
+	"malmodel"
+	"malparser"
 	"net/http"
 	"strconv"
 	"sync"
@@ -50,7 +50,6 @@ func startFillWorker(queue chan int, start, end int) {
 
 func getUrlData(url string) ([]byte, error) {
 	var body []byte
-	fmt.Printf("download %v\n", url)
 	dat, err := http.Get(url)
 	if err != nil || dat.StatusCode != http.StatusOK {
 		return body, errors.New(fmt.Sprintf("error: load url %v, error %v, status %v\n", url, err, dat.StatusCode))
@@ -71,6 +70,7 @@ func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malpars
 	for i := range queue {
 		url := MalAnimeUrl + strconv.Itoa(i)
 
+		fmt.Printf("download %v\n", url)
 		body, err := getUrlData(url)
 		if err != nil {
 			fmt.Println(err.Error())

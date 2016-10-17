@@ -27,6 +27,12 @@ func TestAnimeParser(t *testing.T) {
 	if len(anime.Related) != 2 {
 		t.Error("wrong related,", anime.Related)
 	}
+	if anime.Title != "Kimi no Na wa." {
+		t.Error("title != Kimi no Na wa.", anime.Title)
+	}
+	if anime.English != "Your Name." {
+		t.Error("english != Your Name.", anime.English)
+	}
 	adaptation := false
 	other := false
 	for _, rel := range anime.Related {
