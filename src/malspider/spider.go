@@ -136,7 +136,6 @@ func startSaver(wg *sync.WaitGroup, result chan malparser.Anime, manga bool) {
 		fmt.Printf("save data to db: animeId %v\n", anime.Id)
 
 		animeModel := malmodel.GetAnimeModelFromParsedAnime(anime)
-		fmt.Println(animeModel)
 		err := animeModel.SaveModel(db)
 		if err != nil {
 			fmt.Printf("error: save data %v\n", err)
