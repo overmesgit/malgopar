@@ -67,7 +67,6 @@ func (a AnimeModel) GetRelatedCharacters(db *gorm.DB) ([]CharacterModel, map[int
 	storedChars := a.GetStoredChars()
 	mainMap := storedChars.GetMainCharsMap()
 	var characters []CharacterModel
-	fmt.Println(storedChars, storedChars.GetIds())
 	query := db.Where("id in (?)", storedChars.GetIds()).Find(&characters)
 	if errs := query.GetErrors(); len(errs) > 0 {
 		return characters, mainMap, errors.New(fmt.Sprint(errs))
