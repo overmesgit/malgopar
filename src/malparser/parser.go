@@ -161,10 +161,10 @@ func GetRelated(doc *goquery.Document, parserError *ParserError) []Relation {
 		tr.Find("a").Each(func(j int, link *goquery.Selection) {
 			href, _ := link.Attr("href")
 			splitUrl := strings.Split(href, "/")
-			idType := IdTypeMap[splitUrl[1]]
+			idType, ok := IdTypeMap[splitUrl[1]]
 			id, err := strconv.Atoi(splitUrl[2])
-			if err != nil {
-				parserError.Add(errors.New(fmt.Sprintf("GetRelated error: %v", err.Error())))
+			if err != nil || !ok {
+				parserError.Add(errors.New(fmt.Sprintf("GetRelated %v error: %v", href, err.Error())))
 				return
 			}
 			relations = append(relations, Relation{TitleId: id, TitleType: idType, Type: relationType})
