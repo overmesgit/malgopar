@@ -47,9 +47,3 @@ func TestAnimeParser(t *testing.T) {
 		t.Error("wrong related,", anime.Related)
 	}
 }
-
-func TestMangaParser(t *testing.T) {
-	if 1 != 1 {
-		t.Error("1 != 2")
-	}
-}

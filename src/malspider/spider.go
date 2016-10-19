@@ -88,8 +88,7 @@ func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malpars
 			fmt.Println(err.Error())
 			continue
 		}
-		anime, err := malparser.ParseAnimePage(body)
-		anime.Id = i
+		anime, err := malparser.ParseAnimePage(i, body)
 		if err != nil {
 			fmt.Printf("error: parse url %v, error %v\n", url, err)
 			continue

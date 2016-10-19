@@ -76,10 +76,12 @@ func (a AnimeModel) GetRelatedCharacters(db *gorm.DB) ([]CharacterModel, map[int
 
 func (m *AnimeModel) SaveModel(db *gorm.DB) error {
 	var count int
-	db.Find(&AnimeModel{Id: m.Id}).Count(&count)
+	saveModel := AnimeModel{Id: m.Id}
+	db.First(&saveModel).Count(&count)
 
 	var query *gorm.DB
 	if count > 0 {
+		m.GroupId = saveModel.GroupId
 		query = db.Save(m)
 	} else {
 		query = db.Create(m)
@@ -101,7 +103,7 @@ func GetAnimeModelFromParsedAnime(anime malparser.Anime) *AnimeModel {
 	charsJson, _ := json.Marshal(animeChars)
 
 	model := AnimeModel{Id: anime.Id, Score: anime.Score, ScoreCount: anime.ScoreCount, Title: anime.Title,
-		English: anime.English, RelatedJSON: string(relatedJson), CharsJSON: string(charsJson)}
+		English: anime.English, RelatedJSON: string(relatedJson), CharsJSON: string(charsJson), GroupId: anime.Id}
 
 	return &model
 }

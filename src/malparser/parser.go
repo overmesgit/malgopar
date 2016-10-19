@@ -10,28 +10,35 @@ import (
 	"time"
 )
 
-const (
-	ANIME_TYPE = 0
-	MANGA_TYPE = 1
+type TitleType int
 
-	ADAPTATION_RELATION          = 0
-	SIDE_STORY_RELATION          = 1
-	SEQUEL_RELATION              = 2
-	ALTERNATIVE_VERSION_RELATION = 3
-	SPIN_OFF_RELATION            = 4
-	ALTERNATIVE_SETTING_RELATION = 5
-	CHARACTER_RELATION           = 6
-	OTHER_RELATION               = 7
-	PREQUEL_RELATION             = 8
-	PARENT_STORY_RELATION        = 9
-	FULL_STORY_RELATION          = 10
-	SUMMARY_RELATION             = 11
+const (
+	ANIME_TYPE TitleType = iota
+	MANGA_TYPE
 )
 
+type RelationType int
+
+const (
+	ADAPTATION_RELATION RelationType = iota
+	SIDE_STORY_RELATION
+	SEQUEL_RELATION
+	ALTERNATIVE_VERSION_RELATION
+	SPIN_OFF_RELATION
+	ALTERNATIVE_SETTING_RELATION
+	CHARACTER_RELATION
+	OTHER_RELATION
+	PREQUEL_RELATION
+	PARENT_STORY_RELATION
+	FULL_STORY_RELATION
+	SUMMARY_RELATION
+)
+
+type RelationSlice []Relation
 type Relation struct {
 	TitleId   int
-	Type      int
-	TitleType int
+	Type      RelationType
+	TitleType TitleType
 }
 
 type Anime struct {
@@ -54,7 +61,7 @@ type Anime struct {
 	Popularity int
 	Members    int
 	Favorites  int
-	Related    []Relation
+	Related    RelationSlice
 	Characters CharacterSlice
 }
 
@@ -81,8 +88,8 @@ func (p *ParserError) GetError() error {
 	return nil
 }
 
-func ParseAnimePage(pageHTML []byte) (Anime, error) {
-	res := Anime{}
+func ParseAnimePage(id int, pageHTML []byte) (Anime, error) {
+	res := Anime{Id: id}
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(pageHTML))
 	if err != nil {
 		return res, err
@@ -127,7 +134,7 @@ func GetScoreCount(doc *goquery.Document, parserError *ParserError) int {
 	return int(res)
 }
 
-var RelationMap = map[string]int{
+var RelationMap = map[string]RelationType{
 	"adaptation":          ADAPTATION_RELATION,
 	"side story":          SIDE_STORY_RELATION,
 	"sequel":              SEQUEL_RELATION,
@@ -142,7 +149,7 @@ var RelationMap = map[string]int{
 	"summary":             SUMMARY_RELATION,
 }
 
-var IdTypeMap = map[string]int{
+var IdTypeMap = map[string]TitleType{
 	"anime": ANIME_TYPE,
 	"manga": MANGA_TYPE,
 }
