@@ -63,7 +63,7 @@ func getUrlData(url string) ([]byte, error) {
 			break
 		}
 		fmt.Println("retry")
-		time.Sleep(time.Second*(retry+1))
+		time.Sleep(time.Second*time.Duration(retry+1))
 
 	}
 	if dat.StatusCode != http.StatusOK {
