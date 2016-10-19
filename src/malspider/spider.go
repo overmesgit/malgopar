@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 )
 
 const (
@@ -50,9 +51,23 @@ func startFillWorker(queue chan int, start, end int) {
 
 func getUrlData(url string) ([]byte, error) {
 	var body []byte
-	dat, err := http.Get(url)
-	if err != nil || dat.StatusCode != http.StatusOK {
-		return body, errors.New(fmt.Sprintf("error: load url %v, error %v, status %v\n", url, err, dat.StatusCode))
+	var dat *http.Response
+	var err error
+	retry := 0
+	for retry = 0; retry < 3; retry++ {
+		dat, err = http.Get(url)
+		if err != nil {
+			return body, err
+		}
+		if dat.StatusCode == http.StatusOK || dat.StatusCode != http.StatusTooManyRequests {
+			break
+		}
+		fmt.Println("retry")
+		time.Sleep(time.Second*(retry+1))
+
+	}
+	if dat.StatusCode != http.StatusOK {
+		return body, errors.New(fmt.Sprintf("error: load url %v, error %v, status %v, retry %v\n", url, err, dat.StatusCode, retry))
 	}
 	body, err = ioutil.ReadAll(dat.Body)
 	dat.Body.Close()
