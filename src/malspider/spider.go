@@ -11,16 +11,17 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 )
 
 const (
-	MALMainUrl            = "http://myanimelist.net"
+	MALMainUrl            = "https://myanimelist.net"
 	MalAnimeUrl           = MALMainUrl + "/anime/"
 	MALCharactersUrl      = MALMainUrl + "/anime/%v/rand/characters"
 	MALCharacterDetailUrl = MALMainUrl + "/character/%v/rand/pictures"
 )
 
-func StartSpider(start, end int, manga bool, workers int) {
+func StartSpider(start, end int, manga bool, workers int, pgSettings string) {
 	queue := make(chan int, 100)
 	result := make(chan malparser.Anime, 100)
 
@@ -34,7 +35,7 @@ func StartSpider(start, end int, manga bool, workers int) {
 
 	var wgSaver sync.WaitGroup
 	wgSaver.Add(1)
-	go startSaver(&wgSaver, result, manga)
+	go startSaver(&wgSaver, result, manga, pgSettings)
 
 	wgParser.Wait()
 	close(result)
@@ -50,14 +51,25 @@ func startFillWorker(queue chan int, start, end int) {
 
 func getUrlData(url string) ([]byte, error) {
 	var body []byte
-	dat, err := http.Get(url)
+	var err error
+	var dat *http.Response
+	var retry int
+	for retry = 0; retry < 5; retry++ {
+		dat, err = http.Get(url)
+		if err != nil || dat.StatusCode != http.StatusTooManyRequests {
+			break
+		}
+		dat.Body.Close()
+		time.Sleep(time.Second * time.Duration(retry))
+	}
 	if err != nil || dat.StatusCode != http.StatusOK {
-		return body, errors.New(fmt.Sprintf("error: load url %v, error %v, status %v\n", url, err, dat.StatusCode))
+		dat.Body.Close()
+		return body, errors.New(fmt.Sprintf("error: load url %v, error %v, status %v", url, err, dat.StatusCode))
 	}
 	body, err = ioutil.ReadAll(dat.Body)
 	dat.Body.Close()
 	if err != nil {
-		return body, errors.New(fmt.Sprintf("error: read body %v, error %v\n", url, err))
+		return body, errors.New(fmt.Sprintf("error: read body %v, error %v", url, err))
 	}
 	return body, nil
 }
@@ -120,10 +132,10 @@ func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malpars
 	}
 }
 
-func startSaver(wg *sync.WaitGroup, result chan malparser.Anime, manga bool) {
+func startSaver(wg *sync.WaitGroup, result chan malparser.Anime, manga bool, pgSettings string) {
 	defer wg.Done()
 
-	db, err := gorm.Open("postgres", "host=127.0.0.1 port=5432 user=user dbname=user sslmode=disable password=user")
+	db, err := gorm.Open("postgres", pgSettings)
 	if err != nil {
 		fmt.Printf("error: connect to db %v\n", err)
 		return
