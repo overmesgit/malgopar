@@ -54,7 +54,7 @@ func getUrlData(url string) ([]byte, error) {
 	var dat *http.Response
 	var err error
 	retry := 0
-	for retry = 0; retry < 3; retry++ {
+	for retry = 0; retry < 5; retry++ {
 		dat, err = http.Get(url)
 		if err != nil {
 			return body, err
