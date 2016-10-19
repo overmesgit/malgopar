@@ -20,7 +20,7 @@ const (
 	MALCharacterDetailUrl = MALMainUrl + "/character/%v/rand/pictures"
 )
 
-func StartSpider(start, end int, manga bool, workers int) {
+func StartSpider(start, end int, manga bool, workers int, pgSettings string) {
 	queue := make(chan int, 100)
 	result := make(chan malparser.Anime, 100)
 
@@ -34,7 +34,7 @@ func StartSpider(start, end int, manga bool, workers int) {
 
 	var wgSaver sync.WaitGroup
 	wgSaver.Add(1)
-	go startSaver(&wgSaver, result, manga)
+	go startSaver(&wgSaver, result, manga, pgSettings)
 
 	wgParser.Wait()
 	close(result)
@@ -120,10 +120,10 @@ func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malpars
 	}
 }
 
-func startSaver(wg *sync.WaitGroup, result chan malparser.Anime, manga bool) {
+func startSaver(wg *sync.WaitGroup, result chan malparser.Anime, manga bool, pgSettings string) {
 	defer wg.Done()
 
-	db, err := gorm.Open("postgres", "host=127.0.0.1 port=5432 user=user dbname=user sslmode=disable password=user")
+	db, err := gorm.Open("postgres", pgSettings)
 	if err != nil {
 		fmt.Printf("error: connect to db %v\n", err)
 		return
