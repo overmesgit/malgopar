@@ -14,7 +14,7 @@ func check(e error) {
 func TestAnimeParser(t *testing.T) {
 	dat, err := ioutil.ReadFile("anime_test.html")
 	check(err)
-	anime, err := ParseAnimePage(dat)
+	anime, err := ParseAnimePage(1, dat)
 	if err != nil {
 		t.Error("Parser error:\n", err.Error())
 	}

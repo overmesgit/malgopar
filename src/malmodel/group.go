@@ -1,8 +1,18 @@
 package malmodel
 
-type AnimeGrouper struct {
+type TitleGrouper struct {
+	TitleGroups map[int]int
+	PreviousGroups map[int]int
 }
 
-func GroupAnimeModels([]AnimeModel) {
+func NewTitleGrouper() *TitleGrouper {
+	return &TitleGrouper{}
+}
 
+func (g *TitleGrouper) GroupModels([]AnimeModel) {
+
+}
+
+func (g *TitleGrouper) GetChangedGroups() map[int][]int {
+	return make(map[int][]int)
 }
