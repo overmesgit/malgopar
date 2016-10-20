@@ -8,7 +8,6 @@ go:
 build:
   pre_ci_boot:
     image_tag: prod
-    env: GOPATH=`pwd`:$GOPATH
 
   pre_ci:
     - echo "this is master branch"
@@ -17,7 +16,7 @@ build:
     - go get github.com/jinzhu/gorm
     - go get github.com/jinzhu/gorm/dialects/postgres
     - go get github.com/PuerkitoBio/goquery
-    - go test -v ./...
+    - ./test.sh
     - go get -d -v ./... && go build -v ./...
 
   post_ci:

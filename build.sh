@@ -1,0 +1,1 @@
+GOPATH=`pwd` go build -v src/main/worker.go
