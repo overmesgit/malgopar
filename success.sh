@@ -1,1 +1,1 @@
-curl ya.ru
+curl google.ru

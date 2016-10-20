@@ -8,10 +8,8 @@ go:
 build:
   pre_ci_boot:
     image_tag: prod
-    env: GOPATH=/root/src/github.com/overmesgit/malgopar:$GOPATH
 
   pre_ci:
-    - echo $GOPATH
     - echo "this is master branch"
 
   ci:
@@ -21,7 +19,7 @@ build:
     - ./build.sh
 
   post_ci:
-    - ls -a
+    - ls -l
     - pwd
 
   on_success:
