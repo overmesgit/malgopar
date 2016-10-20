@@ -63,7 +63,13 @@ func (chars StoredCharSlice) GetMainCharsMap() map[int]bool {
 	return res
 }
 
-func (a AnimeModel) GetRelatedCharacters(db *gorm.DB) ([]CharacterModel, map[int]bool, error) {
+func (a *AnimeModel) GetRelatedTitles() malparser.RelationSlice {
+	relatedTitles := make(malparser.RelationSlice, 0)
+	json.Unmarshal([]byte(a.RelatedJSON), &relatedTitles)
+	return relatedTitles
+}
+
+func (a *AnimeModel) GetRelatedCharacters(db *gorm.DB) ([]CharacterModel, map[int]bool, error) {
 	storedChars := a.GetStoredChars()
 	mainMap := storedChars.GetMainCharsMap()
 	var characters []CharacterModel

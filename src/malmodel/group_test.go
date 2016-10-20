@@ -45,14 +45,36 @@ func ItemsEqual(l, r []int) bool {
 type rel []malparser.Relation
 
 func TestSimpleGroup(t *testing.T) {
-	anime1 := AnimeModel{Id: 1, RelatedJSON: rel{}.json()}
+	grouper := NewTitleGrouper()
+
+	anime1 := AnimeModel{Id: 1, RelatedJSON: rel{}.json(), GroupId: 1}
 	anime2 := AnimeModel{Id: 2, RelatedJSON: rel{{1, par, ani}}.json()}
 
-	grouper := NewTitleGrouper()
 	grouper.GroupModels([]AnimeModel{anime1, anime2})
-	result := grouper.GetChangedGroups()
-	if ids, ok := result[2]; !ok || !ItemsEqual(ids, []int{anime2.Id}) {
-		t.Errorf("wrong group %v", ids)
+	result := grouper.TitleGroups
+	if result[anime1.Id] != anime1.Id || result[anime2.Id] != anime1.Id {
+		t.Errorf("wrong group %v", result)
+	}
+
+	anime3 := AnimeModel{Id: 3, RelatedJSON: rel{{4, par, ani}}.json()}
+	anime4 := AnimeModel{Id: 4, RelatedJSON: rel{}.json()}
+	grouper.GroupModels([]AnimeModel{anime3, anime4})
+	if result[anime3.Id] != anime3.Id || result[anime4.Id] != anime3.Id {
+		t.Errorf("wrong group %v", result)
+	}
+
+	anime6 := AnimeModel{Id: 6}
+	grouper.GroupModels([]AnimeModel{anime6})
+
+	anime5 := AnimeModel{Id: 5, RelatedJSON: rel{{2, par, ani}, {3, par, ani}}.json()}
+	grouper.GroupModels([]AnimeModel{anime5})
+	if result[anime5.Id] != anime1.Id || result[anime3.Id] != anime1.Id {
+		t.Errorf("wrong group %v", result)
+	}
+
+	changedGroups := grouper.GetChangedGroups()
+	if len(changedGroups) != 1 || !ItemsEqual(changedGroups[anime1.Id], []int{anime2.Id, anime3.Id, anime4.Id, anime5.Id}) {
+		t.Errorf("wrong group %v", changedGroups)
 	}
 
 }
