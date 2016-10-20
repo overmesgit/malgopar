@@ -14,10 +14,9 @@ build:
     - echo "this is master branch"
 
   ci:
-    - go get github.com/jinzhu/gorm
-    - go get github.com/jinzhu/gorm/dialects/postgres
-    - go get github.com/PuerkitoBio/goquery
-    - go get github.com/overmesgit/malgopar
+#    - go get github.com/jinzhu/gorm
+#    - go get github.com/jinzhu/gorm/dialects/postgres
+#    - go get github.com/PuerkitoBio/goquery
     - go test -v ./...
     - go get -d -v ./... && go build -v ./...
 
