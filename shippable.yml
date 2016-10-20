@@ -1,29 +1,26 @@
 # Language setting
-language: node_js
+language: go
 
 # Version number
 node_js:
-  - 0.12
+  - tip
 
 build:
   pre_ci_boot:
-    image_name: drydock/u14nod
+    image_name: dry-dock/u14gol
     image_tag: prod
-    pull: true
-    options: '--privileged=true --net=bridge -e FOO=true -e BOO=false'
 
   pre_ci:
     - echo "this is master branch"
 
   ci:
-    - npm install
+    - go test -v ./...
+    - go get -d -v ./... && go build -v ./...
 
   post_ci:
     - ls -a
     - pwd
 
-  cache: true
-
-  cache_dir_list: 
-    - $SHIPPABLE_BUILD_DIR/node_modules
+  on_success:
+    - ./success.sh
 
