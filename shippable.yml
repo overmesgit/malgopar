@@ -17,7 +17,7 @@ build:
     - go get github.com/jinzhu/gorm
     - go get github.com/jinzhu/gorm/dialects/postgres
     - go get github.com/PuerkitoBio/goquery
-    - go test -v src/malmodel
+    - go test -v `ls /root/src/github.com/overmesgit/malgopar/src/ -I main`
 
   post_ci:
     - ls -a
