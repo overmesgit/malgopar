@@ -3,7 +3,7 @@ language: go
 
 # Version number
 go:
-  - tip
+  - 1.7
 
 build:
   pre_ci_boot:
