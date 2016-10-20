@@ -7,7 +7,6 @@ node_js:
 
 build:
   pre_ci_boot:
-    image_name: dry-dock/u14gol
     image_tag: prod
 
   pre_ci:
