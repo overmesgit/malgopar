@@ -1,1 +1,1 @@
-curl linime.animesos.net
+curl ya.ru
