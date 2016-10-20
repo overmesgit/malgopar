@@ -11,6 +11,7 @@ build:
     env: GOPATH=/root/src/github.com/overmesgit/malgopar:$GOPATH
 
   pre_ci:
+    - echo $GOPATH
     - echo "this is master branch"
 
   ci:
