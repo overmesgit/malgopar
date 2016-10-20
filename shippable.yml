@@ -8,6 +8,7 @@ go:
 build:
   pre_ci_boot:
     image_tag: prod
+    env: GOPATH=/root/src/github.com/overmesgit/malgopar:$GOPATH
 
   pre_ci:
     - echo "this is master branch"
@@ -16,8 +17,7 @@ build:
     - go get github.com/jinzhu/gorm
     - go get github.com/jinzhu/gorm/dialects/postgres
     - go get github.com/PuerkitoBio/goquery
-    - ./test.sh
-    - go get -d -v ./... && go build -v ./...
+    - go test -v `ls src/ -I main`
 
   post_ci:
     - ls -a

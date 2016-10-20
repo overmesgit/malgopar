@@ -1,1 +1,1 @@
-GOPATH=`pwd`:/home/overmes/PycharmProjects/go go test -v `ls src/ -I main`
+GOPATH=`pwd`:/home/overmes/PycharmProjects/go
