@@ -28,3 +28,7 @@ build:
   on_success:
     - ./shippable/success.sh
 
+integrations:
+  key:
+    - integrationName: lite
+      type: ssh-key
