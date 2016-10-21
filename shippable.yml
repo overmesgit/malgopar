@@ -16,12 +16,12 @@ build:
     - go get github.com/jinzhu/gorm
     - go get github.com/jinzhu/gorm/dialects/postgres
     - go get github.com/PuerkitoBio/goquery
-    - ./build.sh
+    - ./shippable/build.sh
 
   post_ci:
     - ls -l
     - pwd
 
   on_success:
-    - ./success.sh
+    - ./shippable/success.sh
 

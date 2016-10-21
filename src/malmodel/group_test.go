@@ -73,7 +73,7 @@ func TestSimpleGroup(t *testing.T) {
 	}
 
 	changedGroups := grouper.GetChangedGroups()
-	if len(changedGroups) != 1 || !ItemsEqual(changedGroups[anime1.Id], []int{anime2.Id, anime3.Id, anime4.Id, anime5.Id}) {
+	if len(changedGroups) != 2 || !ItemsEqual(changedGroups[anime1.Id], []int{anime2.Id, anime3.Id, anime4.Id, anime5.Id}) {
 		t.Errorf("wrong group %v", changedGroups)
 	}
 
