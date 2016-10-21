@@ -175,6 +175,9 @@ func GetRelated(doc *goquery.Document, parserError *ParserError) []Relation {
 			href, _ := link.Attr("href")
 			splitUrl := strings.Split(href, "/")
 			idType := IdTypeMap[splitUrl[1]]
+			if splitUrl[2] == "" {
+				return
+			}
 			id, err := strconv.Atoi(splitUrl[2])
 			if err != nil {
 				parserError.Add(errors.New(fmt.Sprintf("GetRelated error: %v", err.Error())))
