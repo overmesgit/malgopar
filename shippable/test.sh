@@ -1,1 +1,0 @@
-GOPATH=`pwd`:/home/overmes/PycharmProjects/go

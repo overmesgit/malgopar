@@ -5,6 +5,9 @@ language: go
 go:
   - 1.7
 
+env:
+  - secure: YNagZpQXhLr5XZQ7JoRxfmj47AAAd+Vh1iRTfuAyMUhyg7flDaXytH/8Y01HN5NPz1wv6f6pkqJT+JdQYLqc45rVt4sBUPk0lmzZ/AfxFD0mHokJm8/DS2Yk9daK1fvOaHkEMcldCXgBP2G+B0CEumGysClbN3AwZaGobVeda2kcq7H4DwZW/US2+sO86jzSR2LckpicSOyMWImsZol2dFPKkUGGdrHPnzxCtSWWm8PaABEVV6Orpa2+yYjlOoBJm2kjAwMRbCvDhaR2XF9BDrP5h74oJO49ZFu4AWX4QUm97ih1JSeOeGH0HCUna6D0cgu3ZfYmZipgI+rZCDwVWg==
+
 build:
   pre_ci_boot:
     image_tag: prod
