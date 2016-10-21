@@ -31,7 +31,7 @@ func main() {
 	}
 	changedGroups := grouper.GetChangedGroups()
 	for group, modelIds := range changedGroups {
-		fmt.Printf("Change group %v for %v", group, modelIds)
+		fmt.Printf("Change group %v for %v\n", group, modelIds)
 		db.Table("anime_models").Where("id in (?)", modelIds).UpdateColumn("group_id", group)
 	}
 }

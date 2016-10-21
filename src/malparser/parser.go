@@ -117,6 +117,9 @@ func GetEnglish(doc *goquery.Document, parserError *ParserError) string {
 
 func GetScore(doc *goquery.Document, parserError *ParserError) float64 {
 	scoreText := doc.Find(`[itemprop="ratingValue"]`).Text()
+	if scoreText == "" {
+		scoreText = doc.Find(`span:contains("Score:")`).Next().Text()
+	}
 	res, err := strconv.ParseFloat(scoreText, 64)
 	if err != nil {
 		parserError.Add(errors.New(fmt.Sprintf("GetScore error: %v", err.Error())))
@@ -126,7 +129,10 @@ func GetScore(doc *goquery.Document, parserError *ParserError) float64 {
 
 func GetScoreCount(doc *goquery.Document, parserError *ParserError) int {
 	scoreText := doc.Find(`[itemprop="ratingCount"]`).Text()
-	scoreText = strings.Replace(scoreText, ",", "", 100)
+	if scoreText == "" {
+		scoreText = doc.Find(`span:contains("Score:")`).Next().Next().Next().Text()
+	}
+	scoreText = strings.Replace(scoreText, ",", "", -1)
 	res, err := strconv.Atoi(scoreText)
 	if err != nil {
 		parserError.Add(errors.New(fmt.Sprintf("GetScoreCount error: %v", err.Error())))

@@ -47,3 +47,18 @@ func TestAnimeParser(t *testing.T) {
 		t.Error("wrong related,", anime.Related)
 	}
 }
+
+func TestStrangeAnimeParser(t *testing.T) {
+	dat, err := ioutil.ReadFile("anime_test_strange.html")
+	check(err)
+	anime, err := ParseAnimePage(1, dat)
+	if err != nil {
+		t.Error("Parser error:\n", err.Error())
+	}
+	if anime.Score != 6.70 {
+		t.Error("anime.Score != 6.70,", anime.Score)
+	}
+	if anime.ScoreCount != 43 {
+		t.Error("anime.ScoredBy != 43,", anime.ScoreCount)
+	}
+}
