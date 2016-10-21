@@ -3,7 +3,7 @@ package malmodel
 import "malparser"
 
 type TitleGrouper struct {
-	TitleGroups map[int]int
+	TitleGroups    map[int]int
 	PreviousGroups map[int]int
 }
 
@@ -50,10 +50,13 @@ func (g *TitleGrouper) GroupModels(models []AnimeModel) {
 	for modelIndex := range models {
 		g.PreviousGroups[models[modelIndex].Id] = models[modelIndex].GroupId
 		modelsRelations := models[modelIndex].GetRelatedTitles()
+		g.addNode(models[modelIndex].Id)
 		for relationIndex := range modelsRelations {
 			tType := modelsRelations[relationIndex].Type
 			if tType != malparser.ADAPTATION_RELATION && tType != malparser.OTHER_RELATION && tType != malparser.CHARACTER_RELATION {
-				g.addRelation(models[modelIndex].Id, modelsRelations[relationIndex].TitleId)
+				if modelsRelations[relationIndex].TitleType != malparser.MANGA_TYPE {
+					g.addRelation(models[modelIndex].Id, modelsRelations[relationIndex].TitleId)
+				}
 			}
 		}
 	}
