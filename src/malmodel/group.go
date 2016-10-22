@@ -1,6 +1,10 @@
 package malmodel
 
-import "malparser"
+import (
+	"fmt"
+	"github.com/jinzhu/gorm"
+	"malparser"
+)
 
 type TitleGrouper struct {
 	TitleGroups    map[int]int
@@ -9,6 +13,35 @@ type TitleGrouper struct {
 
 func NewTitleGrouper() *TitleGrouper {
 	return &TitleGrouper{make(map[int]int), make(map[int]int)}
+}
+
+func GroupAllAnimeModels(pgSettings string) {
+	db, err := gorm.Open("postgres", pgSettings)
+	if err != nil {
+		fmt.Printf("error: connect to db %v\n", err)
+		return
+	}
+	defer db.Close()
+	db.AutoMigrate(&AnimeModel{})
+
+	grouper := NewTitleGrouper()
+	var models []AnimeModel
+	page := 0
+	for {
+		pageLimit := 100
+		db.Order("id").Limit(pageLimit).Offset(page * pageLimit).Find(&models)
+		if len(models) > 0 {
+			page++
+			grouper.GroupModels(models)
+		} else {
+			break
+		}
+	}
+	changedGroups := grouper.GetChangedGroups()
+	for group, modelIds := range changedGroups {
+		fmt.Printf("Change group %v for %v\n", group, modelIds)
+		db.Table("anime_models").Where("id in (?)", modelIds).UpdateColumn("group_id", group)
+	}
 }
 
 func (g *TitleGrouper) getRoot(src int) int {

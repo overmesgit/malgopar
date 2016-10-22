@@ -120,6 +120,9 @@ func GetScore(doc *goquery.Document, parserError *ParserError) float64 {
 	if scoreText == "" {
 		scoreText = doc.Find(`span:contains("Score:")`).Next().Text()
 	}
+	if scoreText == "N/A" {
+		return 0.0
+	}
 	res, err := strconv.ParseFloat(scoreText, 64)
 	if err != nil {
 		parserError.Add(errors.New(fmt.Sprintf("GetScore error: %v", err.Error())))

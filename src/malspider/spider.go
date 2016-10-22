@@ -22,15 +22,16 @@ const (
 )
 
 func StartSpider(start, end int, manga bool, workers int, pgSettings string) {
-	queue := make(chan int, 100)
+	queue := make(chan int, 5)
 	result := make(chan malparser.Anime, 100)
+	errors404 := make(chan int, 500)
 
-	go startFillWorker(queue, start, end)
+	go startFillWorker(queue, start, end, errors404)
 
 	var wgParser sync.WaitGroup
 	for i := 0; i < workers; i++ {
 		wgParser.Add(1)
-		go startDownloadWorker(&wgParser, queue, result, manga)
+		go startDownloadWorker(&wgParser, queue, result, manga, errors404)
 	}
 
 	var wgSaver sync.WaitGroup
@@ -42,14 +43,22 @@ func StartSpider(start, end int, manga bool, workers int, pgSettings string) {
 	wgSaver.Wait()
 }
 
-func startFillWorker(queue chan int, start, end int) {
+func startFillWorker(queue chan int, start, end int, errors404 chan int) {
 	for i := start; i <= end; i++ {
 		queue <- i
+		if len(errors404) > 100 {
+			errorTitles := make([]int, 0)
+			for errorIndex := 0; errorIndex < len(errors404); errorIndex++ {
+				errorTitles = append(errorTitles, <-errors404)
+			}
+			fmt.Printf("error: stop creating new tasks, too much 404 errors: %v\n", errorTitles)
+			break
+		}
 	}
 	close(queue)
 }
 
-func getUrlData(url string) ([]byte, error) {
+func getUrlData(url string) ([]byte, int, error) {
 	var body []byte
 	var err error
 	var dat *http.Response
@@ -64,45 +73,51 @@ func getUrlData(url string) ([]byte, error) {
 	}
 	if err != nil || dat.StatusCode != http.StatusOK {
 		dat.Body.Close()
-		return body, errors.New(fmt.Sprintf("error: load url %v, error %v, status %v", url, err, dat.StatusCode))
+		return body, dat.StatusCode, errors.New(fmt.Sprintf("error: load url %v, error %v, status %v", url, err, dat.StatusCode))
 	}
 	body, err = ioutil.ReadAll(dat.Body)
 	dat.Body.Close()
 	if err != nil {
-		return body, errors.New(fmt.Sprintf("error: read body %v, error %v", url, err))
+		return body, dat.StatusCode, errors.New(fmt.Sprintf("error: read body %v, error %v", url, err))
 	}
-	return body, nil
+	return body, dat.StatusCode, nil
 }
 
-func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malparser.Anime, manga bool) {
+func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malparser.Anime, manga bool, errors404 chan int) {
 	defer wg.Done()
 
 	parsedCharacters := map[int]bool{}
 
 	for i := range queue {
-		url := MalAnimeUrl + strconv.Itoa(i)
+		titleUrl := MalAnimeUrl + strconv.Itoa(i)
 
-		fmt.Printf("download %v\n", url)
-		body, err := getUrlData(url)
+		fmt.Printf("download %v\n", titleUrl)
+		body, status, err := getUrlData(titleUrl)
+		if status == http.StatusNotFound {
+			errors404 <- i
+		} else {
+			for errorIndex := 0; errorIndex < len(errors404); errorIndex++ {
+				<-errors404
+			}
+		}
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
 		anime, err := malparser.ParseAnimePage(i, body)
 		if err != nil {
-			fmt.Printf("error: parse url %v, error %v\n", url, err)
+			fmt.Printf("error: parse url %v, error %v\n", titleUrl, err)
 			continue
 		}
-
-		url = fmt.Sprintf(MALCharactersUrl, i)
-		body, err = getUrlData(url)
+		charUrl := fmt.Sprintf(MALCharactersUrl, i)
+		body, _, err = getUrlData(charUrl)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
 		characters, err := malparser.ParseAnimeCharacters(body)
 		if err != nil {
-			fmt.Printf("error: parse url %v, error %v\n", url, err)
+			fmt.Printf("error: parse url %v, error %v\n", charUrl, err)
 			continue
 		}
 		anime.Characters = characters
@@ -110,13 +125,7 @@ func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malpars
 		for charIndex := range anime.Characters {
 			//Update characters only one time
 			if _, ok := parsedCharacters[anime.Characters[charIndex].Id]; !ok {
-				url = fmt.Sprintf(MALCharacterDetailUrl, anime.Characters[charIndex].Id)
-				body, err = getUrlData(url)
-				if err != nil {
-					fmt.Printf(err.Error())
-					continue
-				}
-				favorites, images, err := malparser.ParseCharacterPage(body)
+				favorites, images, err := updateCharacterDetail(&anime.Characters[charIndex])
 				if err != nil {
 					fmt.Printf("error: parse character %v", anime.Characters[charIndex].Id)
 					continue
@@ -129,6 +138,17 @@ func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malpars
 		}
 		result <- anime
 	}
+}
+
+func updateCharacterDetail(char *malparser.Character) (int, []string, error) {
+	var imgRes []string
+	charDetailUrl := fmt.Sprintf(MALCharacterDetailUrl, char.Id)
+	body, _, err := getUrlData(charDetailUrl)
+	if err != nil {
+		return 0, imgRes, err
+	}
+	return malparser.ParseCharacterPage(body)
+
 }
 
 func startSaver(wg *sync.WaitGroup, result chan malparser.Anime, manga bool, pgSettings string) {
