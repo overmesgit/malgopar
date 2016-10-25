@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"malmodel"
 	"malparser"
+	"net/http"
 	"sync"
 )
 
@@ -38,18 +39,17 @@ func UpdateDateFromAnimeTopWorker(wg *sync.WaitGroup, queue chan int, manga bool
 		topPageUrl := fmt.Sprintf(MALTopAnimePage, i*100)
 
 		fmt.Printf("download %v\n", topPageUrl)
-		dat, _, err := getUrlData(topPageUrl)
+		dat, status, err := getUrlData(topPageUrl)
+		if status == http.StatusNotFound {
+			fmt.Println("stop parsing: empty top")
+			break
+		}
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
 
 		animeList, err := malparser.ParseAnimeTopPage(dat)
-		if len(animeList) == 0 {
-			fmt.Println("stop parsing: empty top")
-			break
-		}
-
 		for _, anime := range animeList {
 			fmt.Printf("save data to db: animeId %v\n", anime.Id)
 
