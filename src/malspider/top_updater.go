@@ -9,7 +9,7 @@ import (
 )
 
 func UpdateTitlesFromTop(manga bool, workers int, pgSettings string) {
-	queue := make(chan int, 5)
+	queue := make(chan int, 1000)
 
 	for i := 0; i < 200; i++ {
 		queue <- i
