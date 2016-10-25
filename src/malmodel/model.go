@@ -99,7 +99,17 @@ func (m *AnimeModel) SaveModel(db *gorm.DB) error {
 	return nil
 }
 
+func (m *AnimeModel) Exist(db *gorm.DB) bool {
+	var count int
+	saveModel := AnimeModel{Id: m.Id}
+	db.First(&saveModel).Count(&count)
+	return count > 0
+}
+
 func GetAnimeModelFromParsedAnime(anime malparser.Anime) *AnimeModel {
+	if anime.Related == nil {
+		anime.Related = make(malparser.RelationSlice, 0)
+	}
 	relatedJson, _ := json.Marshal(anime.Related)
 
 	animeChars := make([]StoredChar, 0)

@@ -1,6 +1,7 @@
 package malparser
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 )
@@ -9,6 +10,30 @@ func check(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+func TestTopAnimePage(t *testing.T) {
+	dat, err := ioutil.ReadFile("topanime_test.html")
+	check(err)
+	animeList, err := ParseAnimeTopPage(dat)
+	if err != nil {
+		t.Error("Parser error:\n", err.Error())
+	}
+	if len(animeList) != 50 {
+		t.Error("not all anime found", len(animeList))
+	}
+
+	for _, anime := range animeList {
+		if anime.Id == 0 || anime.Title == "" || anime.Score == 0 {
+			t.Error("wrong anime data", anime)
+		}
+	}
+
+	firstTitle := animeList[0]
+	if firstTitle.Title != "Kimi no Na wa." || firstTitle.Id != 32281 || firstTitle.Score != 9.39 {
+		t.Error("wrong title", firstTitle)
+	}
+	fmt.Println(animeList)
 }
 
 func TestAnimeParser(t *testing.T) {

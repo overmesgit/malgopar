@@ -19,19 +19,19 @@ const (
 	MalAnimeUrl           = MALMainUrl + "/anime/"
 	MALCharactersUrl      = MALMainUrl + "/anime/%v/rand/characters"
 	MALCharacterDetailUrl = MALMainUrl + "/character/%v/rand/pictures"
+	MALTopAnimePage       = MALMainUrl + "/topanime.php?limit=%v"
 )
 
-func StartSpider(start, end int, manga bool, workers int, pgSettings string) {
+func StartSpider(manga bool, workers int, pgSettings string) {
 	queue := make(chan int, 5)
 	result := make(chan malparser.Anime, 100)
-	errors404 := make(chan int, 500)
 
-	go startFillWorker(queue, start, end, errors404)
+	go startFillWorker(queue, pgSettings)
 
 	var wgParser sync.WaitGroup
 	for i := 0; i < workers; i++ {
 		wgParser.Add(1)
-		go startDownloadWorker(&wgParser, queue, result, manga, errors404)
+		go startDownloadWorker(&wgParser, queue, result, manga)
 	}
 
 	var wgSaver sync.WaitGroup
@@ -43,17 +43,20 @@ func StartSpider(start, end int, manga bool, workers int, pgSettings string) {
 	wgSaver.Wait()
 }
 
-func startFillWorker(queue chan int, start, end int, errors404 chan int) {
-	for i := start; i <= end; i++ {
-		queue <- i
-		if len(errors404) > 100 {
-			errorTitles := make([]int, 0)
-			for errorIndex := 0; errorIndex < len(errors404); errorIndex++ {
-				errorTitles = append(errorTitles, <-errors404)
-			}
-			fmt.Printf("error: stop creating new tasks, too much 404 errors: %v\n", errorTitles)
-			break
-		}
+func startFillWorker(queue chan int, pgSettings string) {
+	db, err := gorm.Open("postgres", pgSettings)
+	if err != nil {
+		fmt.Printf("error: connect to db %v\n", err)
+		return
+	}
+	db.AutoMigrate(&malmodel.AnimeModel{})
+
+	var ids []int
+	db.Table("anime_models").Pluck("id", &ids)
+	db.Close()
+
+	for _, id := range ids {
+		queue <- id
 	}
 	close(queue)
 }
@@ -83,7 +86,7 @@ func getUrlData(url string) ([]byte, int, error) {
 	return body, dat.StatusCode, nil
 }
 
-func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malparser.Anime, manga bool, errors404 chan int) {
+func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malparser.Anime, manga bool) {
 	defer wg.Done()
 
 	parsedCharacters := map[int]bool{}
@@ -92,30 +95,23 @@ func startDownloadWorker(wg *sync.WaitGroup, queue chan int, result chan malpars
 		titleUrl := MalAnimeUrl + strconv.Itoa(i)
 
 		fmt.Printf("download %v\n", titleUrl)
-		body, status, err := getUrlData(titleUrl)
-		if status == http.StatusNotFound {
-			errors404 <- i
-		} else {
-			for errorIndex := 0; errorIndex < len(errors404); errorIndex++ {
-				<-errors404
-			}
-		}
+		dat, _, err := getUrlData(titleUrl)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
-		anime, err := malparser.ParseAnimePage(i, body)
+		anime, err := malparser.ParseAnimePage(i, dat)
 		if err != nil {
 			fmt.Printf("error: parse url %v, error %v\n", titleUrl, err)
 			continue
 		}
 		charUrl := fmt.Sprintf(MALCharactersUrl, i)
-		body, _, err = getUrlData(charUrl)
+		dat, _, err = getUrlData(charUrl)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
-		characters, err := malparser.ParseAnimeCharacters(body)
+		characters, err := malparser.ParseAnimeCharacters(dat)
 		if err != nil {
 			fmt.Printf("error: parse url %v, error %v\n", charUrl, err)
 			continue
