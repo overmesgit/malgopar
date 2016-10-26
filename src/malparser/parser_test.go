@@ -58,6 +58,9 @@ func TestAnimeParser(t *testing.T) {
 	if anime.English != "Your Name." {
 		t.Error("english != Your Name.", anime.English)
 	}
+	if anime.Status != FINISHED_AIRING_STATUS {
+		t.Error("status != finished airing", anime.Status)
+	}
 	adaptation := false
 	other := false
 	for _, rel := range anime.Related {

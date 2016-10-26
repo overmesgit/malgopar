@@ -25,10 +25,15 @@ func ParseAnimeTopPage(pageHTML []byte) ([]Anime, error) {
 			fmt.Println("error: can't parse anime id", err)
 		}
 
-		score, err := strconv.ParseFloat(strings.Trim(s.Find(".score").Text(), " \n"), 64)
-		if err != nil {
-			fmt.Println("error: can't parse anime score", err)
+		scoreText := strings.Trim(s.Find(".score").Text(), " \n")
+		var score float64
+		if scoreText != "N/A" {
+			score, err = strconv.ParseFloat(scoreText, 64)
+			if err != nil {
+				fmt.Println("error: can't parse anime score", err)
+			}
 		}
+
 		res = append(res, Anime{Id: titleId, Title: title, Score: score})
 
 	})

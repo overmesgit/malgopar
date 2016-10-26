@@ -34,6 +34,18 @@ const (
 	SUMMARY_RELATION
 )
 
+type StatusType int
+
+const (
+	UNDEFINED_STATUS StatusType = iota
+	NOT_YET_AIRED_STATUS
+	CURRENTLY_AIRING_STATUS
+	FINISHED_AIRING_STATUS
+	NOT_YET_PUBLISHED_STATUS
+	PUBLISHING_STATUS
+	FINISHED_STATUS
+)
+
 type RelationSlice []Relation
 type Relation struct {
 	TitleId   int
@@ -48,7 +60,7 @@ type Anime struct {
 	Japanese   string
 	Type       string
 	Episodes   int
-	Status     int
+	Status     StatusType
 	AiredFrom  time.Time
 	AiredTo    time.Time
 	Producers  []string
@@ -102,6 +114,7 @@ func ParseAnimePage(id int, pageHTML []byte) (Anime, error) {
 	res.Related = GetRelated(doc, parserError)
 	res.Title = GetTitle(doc, parserError)
 	res.English = GetEnglish(doc, parserError)
+	res.Status = GetStatus(doc, parserError)
 
 	return res, parserError.GetError()
 }
@@ -113,6 +126,26 @@ func GetTitle(doc *goquery.Document, parserError *ParserError) string {
 func GetEnglish(doc *goquery.Document, parserError *ParserError) string {
 	rowText := doc.Find(`span:contains("English:")`).Parent().Text()
 	return strings.Trim(strings.Replace(rowText, "English:", "", -1), " \n")
+}
+
+var statuseMap = map[string]StatusType{
+	"not yet aired":     NOT_YET_AIRED_STATUS,
+	"currently airing":  CURRENTLY_AIRING_STATUS,
+	"finished airing":   FINISHED_AIRING_STATUS,
+	"not yet published": NOT_YET_PUBLISHED_STATUS,
+	"publishing":        PUBLISHING_STATUS,
+	"finished":          FINISHED_STATUS,
+}
+
+func GetStatus(doc *goquery.Document, parserError *ParserError) StatusType {
+	rowText := doc.Find(`span:contains("Status:")`).Parent().Text()
+	statusText := strings.Trim(strings.Replace(rowText, "Status:", "", -1), " \n")
+	lowerText := strings.ToLower(statusText)
+	status, ok := statuseMap[lowerText]
+	if !ok {
+		parserError.Add(errors.New(fmt.Sprintf("GetStatus error: status not found %v", status)))
+	}
+	return status
 }
 
 func GetScore(doc *goquery.Document, parserError *ParserError) float64 {

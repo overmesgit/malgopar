@@ -16,9 +16,10 @@ type StoredChar struct {
 }
 
 type AnimeModel struct {
-	Id          int     `gorm:"primary_key"`
-	Score       float64 `gorm:"index"`
-	ScoreCount  int     `gorm:"index"`
+	Id          int                  `gorm:"primary_key"`
+	Score       float64              `gorm:"index"`
+	ScoreCount  int                  `gorm:"index"`
+	Status      malparser.StatusType `gorm:"index"`
 	Title       string
 	English     string
 	GroupId     int    `gorm:"index"`
@@ -118,7 +119,7 @@ func GetAnimeModelFromParsedAnime(anime malparser.Anime) *AnimeModel {
 	}
 	charsJson, _ := json.Marshal(animeChars)
 
-	model := AnimeModel{Id: anime.Id, Score: anime.Score, ScoreCount: anime.ScoreCount, Title: anime.Title,
+	model := AnimeModel{Id: anime.Id, Score: anime.Score, ScoreCount: anime.ScoreCount, Status: anime.Status, Title: anime.Title,
 		English: anime.English, RelatedJSON: string(relatedJson), CharsJSON: string(charsJson), GroupId: anime.Id}
 
 	return &model
