@@ -2,6 +2,7 @@ package malparser
 
 import (
 	"fmt"
+	"github.com/overmesgit/malgopar/src/malparser"
 	"io/ioutil"
 	"testing"
 )
@@ -73,6 +74,25 @@ func TestAnimeParser(t *testing.T) {
 	}
 	if !adaptation || !other {
 		t.Error("wrong related,", anime.Related)
+	}
+}
+
+func TestCharacterParser(t *testing.T) {
+	dat, err := ioutil.ReadFile("characters.html")
+	check(err)
+	characters, err := malparser.ParseAnimeCharacters(dat)
+	if len(characters) == 0 {
+		t.Error("characters not found,", characters)
+	}
+	miyamizu := characters[0]
+	if miyamizu.Id != 137467 {
+		t.Error("wrong id,", miyamizu.Id)
+	}
+	if miyamizu.Name != "Miyamizu, Mitsuha" {
+		t.Error("wrong name,", miyamizu.Name)
+	}
+	if !miyamizu.Main {
+		t.Error("wrong main,", miyamizu.Main)
 	}
 }
 
