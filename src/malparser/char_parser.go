@@ -41,6 +41,7 @@ func (c CharacterSlice) Less(i, j int) bool {
 
 func ParseAnimeCharacters(pageHTML []byte) (CharacterSlice, error) {
 	result := make(CharacterSlice, 0)
+	//fmt.Println(string(pageHTML))
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(pageHTML))
 	if err != nil {
 		return result, err
@@ -48,18 +49,19 @@ func ParseAnimeCharacters(pageHTML []byte) (CharacterSlice, error) {
 
 	doc.Find(".js-scrollfix-bottom-rel tr").Each(func(i int, s *goquery.Selection) {
 		fileUrl, charName, charType, charUrl := "", "", "", ""
-		s.Find(`td > div .picSurround > a[href^="/character"]`).Each(func(i int, s *goquery.Selection) {
+		s.Find(`td > div .picSurround > a[href*="/character"]`).Each(func(i int, s *goquery.Selection) {
 			fileUrl = s.Find("img").AttrOr("data-src", "")
 		})
 		if fileUrl != "" {
-			charInfo := s.Find(`td > a[href^="/character"]`)
+			charInfo := s.Find(`td > a[href*="/character"]`)
 			charName = charInfo.Text()
 			charUrl = charInfo.AttrOr("href", "")
 			charType = s.Find(`td > div > small`).Text()
 		}
 
 		if fileUrl != "" && !strings.Contains(fileUrl, "questionmark") {
-			charId, err := strconv.Atoi(strings.Split(charUrl, "/")[2])
+			urlSplit := strings.Split(charUrl, "/")
+			charId, err := strconv.Atoi(urlSplit[len(urlSplit)-2])
 			if err != nil {
 				fmt.Printf("error: parse char id %v\n", err.Error())
 			}

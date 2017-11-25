@@ -96,6 +96,23 @@ func TestCharacterParser(t *testing.T) {
 	}
 }
 
+func TestCharacterDetailParser(t *testing.T) {
+	dat, err := ioutil.ReadFile("character_detail.html")
+	check(err)
+	favorites, images, err := malparser.ParseCharacterPage(dat)
+	fmt.Println(favorites)
+	fmt.Println(images)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if favorites == 8152 {
+		t.Error("favorites not found,", favorites)
+	}
+	if len(images) != 8 {
+		t.Error("images not found,", images)
+	}
+}
+
 func TestStrangeAnimeParser(t *testing.T) {
 	dat, err := ioutil.ReadFile("anime_test_strange.html")
 	check(err)
